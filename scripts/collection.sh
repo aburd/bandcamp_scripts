@@ -47,6 +47,12 @@ extract_zip_file()
   local album_name="$(echo $zip_file | sed -r 's/.* - (.*)\.zip/\1/')"
   local full_dir_path="$artist_name/$album_name"
 
+  if [ -d "$full_dir_path" ]; then
+    verbose_echo "Skipping extraction as this already looks like it exists..."
+    verbose_echo "$(ls "$full_dir_path")"
+    return -1
+  fi
+
   verbose_echo "Extracting: Artist - $artist_name; Album - $album_name to $full_dir_path..."
   mkdir -p "$full_dir_path"
   unzip "$zip_file" -d "$full_dir_path"
@@ -86,12 +92,19 @@ done
 confirm_music_directory
 pushd "$MUSIC_DIR" &>/dev/null
 
-# Do stuff
-for zip_file in "$(ls *.zip)"
+# Do stuff in Music dir
+verbose_echo "Extracting all zip files..."
+for zip_file in *.zip
 do
+  [ -e "$zip_file" ] || continue
+  echo $zip_file
   extract_zip_file "$zip_file"
 done
+# Clean up 
+verbose_echo "Cleaning up all zip files..."
+if [ -e *.zip ]; then
+  rm -I *.zip
+fi
 verbose_echo "Done."
 
-# Clean up 
 popd &>/dev/null
