@@ -1,5 +1,17 @@
 #!/bin/bash
 
+die() 
+{ 
+  print_usage
+  echo "$*" >&2; 
+  exit 2; 
+}  # complain to STDERR and exit with error
+
+needs_arg() 
+{ 
+  if [ -z "$OPTARG" ]; then die "No arg for --$OPT option"; fi; 
+}
+
 expandPath() {
   local path
   local -a pathElements resultPathElements
@@ -58,11 +70,23 @@ extract_zip_file()
   unzip "$zip_file" -d "$full_dir_path"
 }
 
+process_mp3_file()
+{
+  local mp3_file="$1"
+  local artist_name="$(echo $mp3_file | sed -r 's/(.*) - .*\.mp3/\1/')"
+  local song_name="$(echo $mp3_file | sed -r 's/.* - (.*)\.mp3/\1/')"
+  local full_dir_path="$artist_name/$song_name"
+
+  verbose_echo "Moving: Artist - $artist_name; Song - $song_name to $full_dir_path..."
+  mv "$mp3_file" "$full_dir_path"
+}
+
 confirm_music_directory()
 {
   if ! [ -d "$MUSIC_DIR" ]; then
     echo "Your music directory (MUSIC_DIR) is not set. Where would you like your music saved to?" 
     read -p 'Music Directory: ' MUSIC_DIR
+    MUSIC_DIR="$(expandPath $MUSIC_DIR)"
     echo "Music directory set to '$MUSIC_DIR'"
   fi
 }
@@ -72,22 +96,38 @@ print_usage() {
   echo "Usage:"
   echo "  -d <music directory> : Directory"
   echo "  -v : Verbose"
+  echo "  -m | --mp3 : Also handle mp3 files"
+  echo "  -r | --dry-run : Do a run, don't actually move/extract any files"
+  echo "  -c | --clean : Don't clean any files after processing" 
 }
 
 # MAIN
 MUSIC_DIR=''
 VERBOSE=false
+MP3=false
+DRY_RUN=false
+CLEAN=true
 
-while getopts 'd:hv' flag; do
-  case "${flag}" in
-    d) MUSIC_DIR="${OPTARG}" ;;
-    h) print_usage 
+while getopts d:hmvrc-: OPT; do
+  # support long options: https://stackoverflow.com/a/28466267/519360
+  if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+    OPT="${OPTARG%%=*}"       # extract long option name
+    OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+    OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
+  fi
+  case "$OPT" in
+    d ) MUSIC_DIR="${OPTARG}" ;;
+    h ) print_usage 
        exit 0 ;;
-    v) VERBOSE=true ;;
-    *) print_usage
-       exit 1 ;;
+    m | mp3 ) MP3=true ;;
+    r | dry-run ) DRY_RUN=true ;;
+    v ) VERBOSE=true ;;
+    c | clean ) CLEAN=false ;;
+    ??* )          die "Illegal option --$OPT" ;;  # bad long option
+    ? )            exit 2 ;;  # bad short option (error reported via getopts)
   esac
 done
+shift $((OPTIND-1)) # remove parsed options and args from $@ list
 
 confirm_music_directory
 pushd "$MUSIC_DIR" &>/dev/null
@@ -97,13 +137,24 @@ verbose_echo "Extracting all zip files..."
 for zip_file in *.zip
 do
   [ -e "$zip_file" ] || continue
-  echo $zip_file
-  extract_zip_file "$zip_file"
+  verbose_echo "Zip file: $zip_file"
+  if [ $DRY_RUN = false ]; then
+    extract_zip_file "$zip_file"
+    if [ $CLEAN = true ]; then
+      rm -I "$zip_file"
+    fi
+  fi
 done
-# Clean up 
-verbose_echo "Cleaning up all zip files..."
-if [ -e *.zip ]; then
-  rm -I *.zip
+if [ $MP3 = true ]; then
+  verbose_echo "Moving all mp3 files..."
+  for mp3_file in *.mp3
+  do
+    [ -e "$mp3_file" ] || continue
+    verbose_echo "MP3 file: $mp3_file"
+    if [ $DRY_RUN = false ]; then
+      process_mp3_file "$mp3_file" 
+    fi
+  done
 fi
 verbose_echo "Done."
 
