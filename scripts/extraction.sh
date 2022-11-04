@@ -75,9 +75,10 @@ process_mp3_file()
   local mp3_file="$1"
   local artist_name="$(echo $mp3_file | sed -r 's/(.*) - .*\.mp3/\1/')"
   local song_name="$(echo $mp3_file | sed -r 's/.* - (.*)\.mp3/\1/')"
-  local full_dir_path="$artist_name/$song_name"
+  local full_dir_path="$artist_name/$artist_name - $song_name.mp3"
 
   verbose_echo "Moving: Artist - $artist_name; Song - $song_name to $full_dir_path..."
+  mkdir -p "$artist_name"
   mv "$mp3_file" "$full_dir_path"
 }
 
