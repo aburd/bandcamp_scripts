@@ -1,6 +1,7 @@
 ## Description
 
-Some scripts for managing media I get from [Bandcamp](https://bandcamp.com). 
+Bash scripts for managing media I get from [Bandcamp](https://bandcamp.com). 
+I've only tested this on a linux system, but it should work as long as you have bash.
 
 ## Installation
 
