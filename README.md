@@ -15,15 +15,15 @@ Bandcamp has you download music in a zipfile. Managing the zip files is always a
 This script asks where you keep your music (i.e. "~/music"). If it finds any zip files there, it will parse the titles and extract them to the appropriate folders.
 
 EX: 
-Music Folder: /home/user/music
+Music Folder: /home/bob/music
 Downloded bandcamp zip: My Band - My Album.zip
 
-- Creates -> /home/user/music/My Band/My Album
+- Creates -> /home/bob/music/My Band/My Album
 - Extracts all songs from zip file there
 - Deletes zip file
 
 ```
-/home/aburd/Music
+/home/bob/Music
 ├── Boy Harsher
 │   └── The Runner (Original Soundtrack)
 │       ├── Boy Harsher - The Runner (Original Soundtrack) - 01 Tower.mp3
